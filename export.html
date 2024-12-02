@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Model Viewer</title>
+    <style>
+        /* Ensure the canvas occupies the full viewport */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: white; /* White background for the canvas */
+        }
+        
+        /* Reset body margins and disable scrolling */
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* Styling for the Back button */
+        .back-button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 100; /* Ensure it appears above the canvas */
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.9); /* Slightly transparent background */
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Button to navigate back to the main upload page -->
+    <button class="back-button" onclick="window.location.href='index.html'">Back to Upload</button>
+
+    <!-- Importing necessary libraries for Three.js functionalities -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Declare global variables for Three.js scene elements and loaded model
+        let scene, camera, renderer, controls, model;
+
+        // Initialize the Three.js environment
+        function init() {
+            scene = new THREE.Scene(); // Create a new scene
+
+            // Set up the perspective camera
+            camera = new THREE.PerspectiveCamera(
+                75, // Field of view
+                window.innerWidth / window.innerHeight, // Aspect ratio
+                0.1, // Near clipping plane
+                1000 // Far clipping plane
+            );
+            camera.position.set(0, 0, 5); // Position the camera slightly away from the origin
+
+            // Create the renderer and attach it to the DOM
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight); // Match viewport size
+            renderer.setClearColor(0xffffff); // Set the canvas background to white
+            document.body.appendChild(renderer.domElement);
+
+            // Add OrbitControls for interactive viewing
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // Enable smooth damping for controls
+            controls.dampingFactor = 0.05; // Damping factor for smoothness
+
+            // Add ambient light for uniform lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            // Add directional light for shadows and highlights
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+
+            loadModelFromStorage(); // Load the model from localStorage
+            animate(); // Start the animation loop
+        }
+
+        // Load a 3D model stored in localStorage
+        function loadModelFromStorage() {
+            const storedModel = localStorage.getItem('exportedModel'); // Retrieve the stored model JSON
+            if (!storedModel) {
+                alert('No exported model found!'); // Alert if no model is found in localStorage
+                window.location.href = 'index.html'; // Redirect back to the upload page
+                return;
+            }
+
+            // Parse and load the model using GLTFLoader
+            const loader = new THREE.GLTFLoader();
+            loader.parse(
+                storedModel, // The JSON representation of the model
+                '', // Optional path (not needed for in-memory data)
+                (gltf) => {
+                    model = gltf.scene; // Assign the loaded model to the global variable
+                    scene.add(model); // Add the model to the scene
+                },
+                (error) => {
+                    console.error('Error loading model:', error); // Log any parsing errors
+                }
+            );
+        }
+
+        // Animation loop to render the scene and update controls
+        function animate() {
+            requestAnimationFrame(animate); // Schedule the next frame
+            controls.update(); // Update the OrbitControls
+            renderer.render(scene, camera); // Render the scene using the camera
+        }
+
+        // Adjust camera and renderer on window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; // Update the camera aspect ratio
+            camera.updateProjectionMatrix(); // Apply the new aspect ratio
+            renderer.setSize(window.innerWidth, window.innerHeight); // Resize the renderer to match the new dimensions
+        });
+
+        // Initialize the 3D viewer when the page loads
+        init();
+    </script>
+</body>
+</html>
